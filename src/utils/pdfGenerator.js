@@ -1,11 +1,11 @@
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 
 export function generatePDF(personName, records) {
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
 
   // ── Header ──────────────────────────────────────────
-  doc.setFillColor(37, 99, 235);           // medical blue
+  doc.setFillColor(37, 99, 235);
   doc.rect(0, 0, 210, 30, 'F');
 
   doc.setTextColor(255, 255, 255);
@@ -21,29 +21,8 @@ export function generatePDF(personName, records) {
     `Generated: ${new Date().toLocaleDateString('en-IN', {
       day: '2-digit', month: 'long', year: 'numeric',
     })}`,
-    210 - 14,
-    22,
-    { align: 'right' }
+    196, 22, { align: 'right' }
   );
-
-  // ── BP Category legend ───────────────────────────────
-  doc.setTextColor(60, 60, 60);
-  doc.setFontSize(9);
-  doc.setFont('helvetica', 'bold');
-  doc.text('Classification Guide:', 14, 38);
-  doc.setFont('helvetica', 'normal');
-  const legend = [
-    ['Normal', '< 120 / < 80'],
-    ['Elevated', '120–129 / < 80'],
-    ['High Stage 1', '130–139 / 80–89'],
-    ['High Stage 2', '≥ 140 / ≥ 90'],
-    ['Crisis', '≥ 180 / ≥ 120'],
-  ];
-  let lx = 14;
-  legend.forEach(([label, range]) => {
-    doc.text(`${label}: ${range}`, lx, 44);
-    lx += 42;
-  });
 
   // ── Table ─────────────────────────────────────────────
   const tableRows = records.map(r => [
@@ -58,8 +37,8 @@ export function generatePDF(personName, records) {
     bpCategoryLabel(Number(r.avg_upper), Number(r.avg_lower)),
   ]);
 
-  doc.autoTable({
-    startY: 50,
+  autoTable(doc, {
+    startY: 40,
     head: [['Date', 'Time', 'Avg Systolic', 'Avg Diastolic', 'Avg Pulse', 'Classification']],
     body: tableRows,
     headStyles: {
@@ -81,10 +60,10 @@ export function generatePDF(personName, records) {
     didParseCell(data) {
       if (data.section === 'body' && data.column.index === 5) {
         const val = data.cell.text[0];
-        if (val === 'Normal')       data.cell.styles.textColor = [22, 163, 74];
-        else if (val === 'Elevated') data.cell.styles.textColor = [202, 138, 4];
-        else if (val.includes('Stage')) data.cell.styles.textColor = [234, 88, 12];
-        else if (val === 'Crisis')  data.cell.styles.textColor = [220, 38, 38];
+        if (val === 'Normal')             data.cell.styles.textColor = [22, 163, 74];
+        else if (val === 'Elevated')      data.cell.styles.textColor = [202, 138, 4];
+        else if (val.includes('Stage'))   data.cell.styles.textColor = [234, 88, 12];
+        else if (val === 'Crisis')        data.cell.styles.textColor = [220, 38, 38];
       }
     },
     margin: { left: 14, right: 14 },
@@ -96,19 +75,16 @@ export function generatePDF(personName, records) {
     doc.setPage(i);
     doc.setFontSize(8);
     doc.setTextColor(150);
-    doc.text(
-      `Page ${i} of ${pageCount} — BP Tracker`,
-      105, 290, { align: 'center' }
-    );
+    doc.text(`Page ${i} of ${pageCount} — BP Tracker`, 105, 290, { align: 'center' });
   }
 
   doc.save(`BP_Report_${personName.replace(/\s+/g, '_')}.pdf`);
 }
 
 function bpCategoryLabel(upper, lower) {
-  if (upper < 120 && lower < 80)  return 'Normal';
-  if (upper < 130 && lower < 80)  return 'Elevated';
-  if (upper < 140 || lower < 90)  return 'High Stage 1';
-  if (upper >= 180 || lower >= 120) return 'Crisis';
+  if (upper < 120 && lower < 80)       return 'Normal';
+  if (upper < 130 && lower < 80)       return 'Elevated';
+  if (upper < 140 || lower < 90)       return 'High Stage 1';
+  if (upper >= 180 || lower >= 120)    return 'Crisis';
   return 'High Stage 2';
 }
